@@ -1,0 +1,10 @@
+prefix=/Users/nsdong2/lemon
+exec_prefix=/Users/nsdong2/lemon/bin
+libdir=/Users/nsdong2/lemon/lib
+includedir=/Users/nsdong2/lemon/include
+
+Name: LEMON
+Description: Library for Efficient Modeling and Optimization in Networks
+Version: 1.3.1
+Libs: -L${libdir} -lemon     
+Cflags: -I${includedir}

@@ -231,6 +231,3 @@ def solvePaction(treeA, treeB, nsamples):
     solver = PCTIsolver(treeA, treeB, nsamples)
     solver.solve()
     return solver
-
-
-
