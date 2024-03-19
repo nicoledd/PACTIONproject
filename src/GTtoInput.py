@@ -1,11 +1,13 @@
 import networkx as nx
+import numpy as np
+import pandas as pd
 
 class GTinput:
     def __init__(self, G):
         self.G = G
         self.k = None
         self.m = None
-        self.snvs = {} # accessed through int id - 'u','v', 'segment', 'sample'
+        self.snvs = [] # accessed through int id - 'u','v', 'segment', 'sample'
         self.cnas = None
         self.computek()
         self.computem()
@@ -33,25 +35,29 @@ class GTinput:
             rowsV = self.G.nodes[v]['label'].split('\\n')
             snvsU = []
             snvsV = []
-            for segmentIdx in range(len(rowsU)):
-                if rowsU[segmentIdx] == "":
+            for segmentIdxxx in range(len(rowsU)):
+                if rowsU[segmentIdxxx] == "":
                     snvsU.append([])
-                elif rowsU[segmentIdx][0] == '0' or rowsU[segmentIdx][0] == '1':
-                    currSnvs = rowsU[segmentIdx].split(';')
+                elif rowsU[segmentIdxxx][0] == '0' or rowsU[segmentIdxxx][0] == '1':
+                    currSnvs = rowsU[segmentIdxxx].split(';')
                     currSnvs = [ele.strip() for ele in currSnvs]
                     currSnvs = [ele for ele in currSnvs if ele != ""]
                     snvsU.append(currSnvs)
-            for segmentIdx in range(len(rowsV)):
-                if rowsV[segmentIdx] == "":
+            for segmentIdxxx in range(len(rowsV)):
+                if rowsV[segmentIdxxx] == "":
                     snvsV.append([])
-                elif rowsV[segmentIdx][0] == '0' or rowsV[segmentIdx][0] == '1':
-                    currSnvs = rowsV[segmentIdx].split(';')
+                elif rowsV[segmentIdxxx][0] == '0' or rowsV[segmentIdxxx][0] == '1':
+                    currSnvs = rowsV[segmentIdxxx].split(';')
                     currSnvs = [ele.strip() for ele in currSnvs]
                     currSnvs = [ele for ele in currSnvs if ele != ""]
                     snvsV.append(currSnvs)
             
             for segmentIdx in range(len(snvsU)):
                 for snvIdx in range(len(snvsU[segmentIdx])):
+
+                    if segmentIdx > len(snvsU)-1 or snvIdx > len(snvsU[segmentIdx])-1 or segmentIdx>len(snvsV)-1 or snvIdx>len(snvsV[segmentIdx])-1:
+                        continue
+                    
                     if snvsU[segmentIdx][snvIdx] != snvsV[segmentIdx][snvIdx]:
                         currU = u
                         currV = v
@@ -67,24 +73,26 @@ class GTinput:
                         # iterate through every node and add its proportions
                         # if there is snv mutation there
                         props = [0 for _ in range(self.m)]
-                        for node in self.G.nodes:
-                            rows = self.G.nodes[node]['label'].split('\\n')
-                            cnasofnode = rows[0].split(';')
+                        for nodee in self.G.nodes:
+                            rowss = self.G.nodes[nodee]['label'].split('\\n')
+                            cnasofnode = rowss[0].split(';')
                             cnasofnode = [ele.strip(' ').strip('\"').strip('(').strip(')') for ele in cnasofnode]
                             cnasofnode = cnasofnode[:-1]
                             cnasofnode = [tuple(map(int, ele.split(','))) for ele in cnasofnode]
-                            propsofnode = rows[-1].strip('[').strip(']').strip('\"').lstrip().rstrip().split()[:-1]
+                            propsofnode = rowss[-1].strip('[').strip(']').strip('\"').lstrip().rstrip().split()[:-1]
                             propsofnode = [float(ele) for ele in propsofnode]
                             snvsofnode = []
-                            for segmentIdxx in range(len(rows)):
-                                if rows[segmentIdxx] == "":
+                            for segmentIdxx in range(len(rowss)):
+                                if rowss[segmentIdxx] == "":
                                     snvsofnode.append([])
-                                elif rows[segmentIdxx][0] == '0' or rows[segmentIdxx][0] == '1':
-                                    currrSnvs = rows[segmentIdxx].split(';')
+                                elif rowss[segmentIdxx][0] == '0' or rowss[segmentIdxx][0] == '1':
+                                    currrSnvs = rowss[segmentIdxx].split(';')
                                     currrSnvs = [ele.strip() for ele in currrSnvs]
-                                    currrSnvs = [ele for ele in currSnvs if ele != ""]
+                                    currrSnvs = [ele for ele in currrSnvs if ele != ""]
                                     snvsofnode.append(currrSnvs)
 
+                            if segmentIdx > len(snvsofnode)-1 or snvIdx > len(snvsofnode[segmentIdx])-1 or segmentIdx>len(snvsV)-1 or snvIdx>len(snvsV[segmentIdx])-1:
+                                continue
                             if snvsofnode[segmentIdx][snvIdx] == snvsV[segmentIdx][snvIdx]:
                                 for mIdx in range(self.m):
                                     props[mIdx] += int(cnasofnode[segmentIdx][cnaIdx])*propsofnode[mIdx]

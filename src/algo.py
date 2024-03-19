@@ -19,23 +19,32 @@ from progressive_caller import solveProgressivePCI, solveProgressivePaction
 
 def runAlgo(GTinput):
 
+    snvDf = GTinput.snvs
+
+    cnaDf = GTinput.cnas
     s = snvToIdxDict(GTinput.snvs) # snv name -> idx
 
     trees = []
+    usedIndices = []
 
     for segmentidx in range(GTinput.k):
-        currSnvDf = snvDf.loc[snvDf['segment'] == segmentidx]
-        currCnaDf = pd.read_csv(args.c[segmentidx], sep='\t')
+        currSnvDf = snvDf.loc[snvDf['segment'] == str(segmentidx)]
+        currCnaDf0 = cnaDf[segmentidx]
+        tmpp = []
+        for cna,samples in currCnaDf0.items():
+            tmp = [str(cna)]
+            for sampleidx, prop in samples.items():
+                tmp.append(prop)
+            tmpp.append(tmp)
+        currCnaDf = pd.DataFrame(tmpp, columns =['copy_number_state'] + ['sample_' + str(ti) for ti in range(GTinput.m)])
+        if len(currSnvDf) == 0:
+            continue
+        usedIndices.append(segmentidx)
         T = segmentTree(currSnvDf, currCnaDf, s, GTinput.m)
-        '''
-        plt.figure(figsize=(15,15))
-        pos = graphviz_layout(T, prog="dot")
-        nx.draw(T, with_labels = True, font_size=10, pos=pos)
-        plt.savefig('segment_' + str(segmentidx) + '.png')
-        '''
         trees.append(T)
 
     finalT = solveProgressivePaction(trees, GTinput.m)
+
     for node in finalT.nodes:
         firstSegment = None
         nodeName = ""
@@ -48,41 +57,8 @@ def runAlgo(GTinput):
             else:
                 nodeName += str(segment) + '\n'
         finalT.nodes[node]['realName'] = str(firstSegment) + '\n' + str(nodeName)
-            
-    #plt.figure(figsize=(100,100))
-    #labels = nx.get_node_attributes(finalT, 'realName') 
-    #pos = nx.nx_agraph.graphviz_layout(finalT, prog="dot")
-    #nx.draw(finalT, labels=labels, font_size=10, pos=pos)
-    #plt.savefig('finalTree.png')
 
-    predictedNodes = []
-    for nodeName in finalT.nodes:
-        nodeName0 = list(nodeName)
-        firstSection = [ele for ele in nodeName0 if type(ele[0])==int]
-        nodeName1 = [tuple(firstSection)] + [ele for ele in nodeName0 if type(ele[0])!=int]
-        segments = []
-        for segment in nodeName1:
-            copies = [segment[0][0], segment[0][1]]
-            mutations = [0 for _ in range(len(segment)-1)]
-            for segIdx in range(len(segment)-1):
-                mutIdx0 = snvDf.at[segment[segIdx+1][0],'snv_mut']
-                mutIdx1 = tuple(mutIdx0.split(','))
-                mutIdx2 = int(mutIdx1[2])
-
-                mutations[mutIdx2] = segment[segIdx+1][1]
-            s = Segment(copies, mutations)
-            segments.append(s)
-        props = []
-        for sampleIdx in range(GTinput.m):
-            props.append(finalT.nodes[nodeName]['sample_' + str(sampleIdx)])
-        newNode = Node(nodeName, segments, props)
-        predictedNodes.append(newNode)
-
-    realNodes = getRealNodes(args.g)  
-    recall = getRecall(realNodes, predictedNodes)
-    print(recall)
-
-    return finalT
+    return finalT, usedIndices
 
 
 
@@ -163,7 +139,7 @@ def snvToIdxDict(snvDf):
     return snvToIdx
 
 def segmentTree(currSnvDf, currCnaDf, s, nsamples):
-    cnatree, gentrees = processSegment(currSnvDf, currCnaDf)
+    cnatree, gentrees = processSegment(currSnvDf, currCnaDf, nsamples)
     currTrees = []
     C = getCnaTree(currCnaDf, cnatree)
     currTrees.append(C)
@@ -178,6 +154,7 @@ def segmentTree(currSnvDf, currCnaDf, s, nsamples):
         G[snv] = findSnvTree(currCnaDf, currSnvDf, snv, gentree)
         currSnvIndices.append(s[snv])
         currTrees.append(G[snv])
+
 
     tmpT = solveProgressivePCI(currTrees, nsamples, currCnaDf)
     T = postprocessCombinedTree(tmpT, currSnvIndices, nsamples)
@@ -244,19 +221,29 @@ def findSnvTree(cnaDf, snvDf, snv, gentree):
         if vaf0==vaf1 and vaf0==0:
             prop0 = 0
             prop1 = 0
-        else:        
-            assert vaf0 != vaf1, "cant linear interpolate if it's the same"
+        if vaf0 == vaf1:
+            prop0 = 0
+            prop1 = 0
+        else:
             expanded_prop = cnaDf[sample][expanded_xy]
-            assert min(vaf0,vaf1) <= vaf and vaf <= max(vaf0,vaf1), "we r gonna have negative proportions"
-            prop0 = (vaf1-vaf)/(vaf1-vaf0) * expanded_prop
-            prop1 = (vaf-vaf0)/(vaf1-vaf0) * expanded_prop
+            vaf = float(vaf)
+            vaf1 = float(vaf1)
+            vaf0 = float(vaf0)
+            if vaf < 0:
+                prop0 = 0
+                prop1 = 0
+            else:
+                prop0 = (vaf1-vaf)/(vaf1-vaf0) * expanded_prop
+                prop1 = (vaf-vaf0)/(vaf1-vaf0) * expanded_prop
         for node in T.nodes:
             xy = node[:2]
             if xy == expanded_xy:
                 bar = node[2:]
                 if bar == expanded_bars[0]:
+                    prop0 = max(prop0, 0)
                     T.nodes[node][sample] = prop0
                 elif bar == expanded_bars[1]:
+                    prop1 = max(prop0, 0)
                     T.nodes[node][sample] = prop1
                 else:
                     raise Exception("what")
@@ -294,79 +281,15 @@ def filterByNode(allNodes, currNode):
         if x0==currNode[0] and y0==currNode[1]:
             ans.append(node)
     return ans
-        
-
-def drawCnaGraphs(cnaTrees, cnaDf):
-    for i in range(len(cnaTrees)):
-        cnatree = cnaTrees[i]
-        C = nx.DiGraph()
-        C.add_edges_from(cnatree)
-        labels = {}
-        for node in list(C.nodes):
-            tmp = cnaDf.loc[cnaDf['copy_number_state']==str(node)]
-            props = str(tmp.iloc[0]["copy_number_state"]) + "\n" + str(round(tmp.iloc[0]["sample_0"],3)) + "\n" + str(round(tmp.iloc[0]["sample_1"],3))
-            labels[node] = props
-        pos = graphviz_layout(C, prog="dot")
-        if i == 1:
-            nx.draw(C, with_labels=True, font_size=9, node_size=1400, node_color="yellow", labels=labels, pos=pos)
-        else:
-            nx.draw(C, with_labels=True, font_size=9, node_size=1400, node_color="#ADD8E6", labels=labels, pos=pos)
-        plt.savefig("cnaTree" + str(i) + ".png")
-        plt.clf()
-
-def drawGenGraph(genTrees, cnaIdx, cnaDf, minVafs, maxVafs, snvDf):
-
-    for j in range(len(genTrees)):
-        gentree = genTrees[j]
-        G = nx.DiGraph()
-        G.add_edges_from(gentree)
-        labels = {}
-        for longNode in list(G.nodes):
-            node = (longNode[0], longNode[1])
-            tmp = cnaDf.loc[cnaDf['copy_number_state']==str(node)]
-            props = str(tmp.iloc[0]["copy_number_state"]) + "\n" + str(round(tmp.iloc[0]["sample_0"],3)) + "\n" + str(round(tmp.iloc[0]["sample_1"],3))
-            labels[longNode] = str(props) + "\n" + str(longNode)
-        pos = graphviz_layout(G, prog="dot")
-        x = np.array(minVafs[j])
-        y = np.array(maxVafs[j])
-        x = np.round(x, 3)
-        y = np.round(y, 3)
-        fits = getFits(minVafs[j], maxVafs[j], snvDf)
-        txt = "minvaf " + str(x) + "\n" + "maxvaf " + str(y) + "\n" + "fits " + str(fits) + "\n" + "rows " + str([ele[-8] for ele in list(snvDf['snv_mut'])])
-        plt.figtext(0.5, 0.01, txt)
-
-        if cnaIdx == 1:
-            nx.draw(G, with_labels=True, font_size=9, node_size=1400, node_color="yellow", labels=labels, pos=pos)
-        else:
-            nx.draw(G, with_labels=True, font_size=9, node_size=1400, node_color="#ADD8E6", labels=labels, pos=pos)
-        plt.savefig("cnaTree" + str(cnaIdx) + "_genTree" + str(j) + ".png")
-        plt.clf()
 
 
-def getFits(minVaf, maxVaf, snvDf):
-    n = len(snvDf.columns) - 2
-    fits = []
-    for snv in list(snvDf['snv_mut']):
-        tmp = True
-        for i in range(n):
-            props = snvDf.loc[snvDf['snv_mut']==snv]['sample'+str(i)]
-            vaf = float(props.iloc[0])
-            if vaf < minVaf[i] or vaf > maxVaf[i]:
-                tmp = False
-                break
-        fits.append(tmp)
-    return fits
-            
-
-def processSegment(snvDf, cnaDf):
+def processSegment(snvDf, cnaDf, n):
 
     cnaTreeAns = None
     genTreesAns = None
     minError = 100
 
     cnaTrees = getCnaTrees(cnaDf)
-
-    #drawCnaGraphs(cnaTrees, cnaDf)
 
     for i in range(len(cnaTrees)):
         cnaTree = cnaTrees[i]
@@ -379,13 +302,13 @@ def processSegment(snvDf, cnaDf):
         for gentree in gentrees:
             G = nx.DiGraph()
             G.add_edges_from(gentree)
-            minVaf, maxVaf = getVafRange(C, G, cnaDf)
+            minVaf, maxVaf = getVafRange(C, G, cnaDf, n)
             minVafs.append(minVaf)
             maxVafs.append(maxVaf)
 
         snvgentrees = {}
         for snv in list(snvDf['snv_mut']):
-            error, snvgentrees[snv] = assignSnv(snv, snvDf, gentrees, minVafs, maxVafs)
+            error, snvgentrees[snv] = assignSnv(snv, snvDf, gentrees, minVafs, maxVafs, n)
             currError += error
         
         if currError < minError:
@@ -393,24 +316,21 @@ def processSegment(snvDf, cnaDf):
             cnaTreeAns = cnaTree
             genTreesAns = snvgentrees
 
-        #drawGenGraph(gentrees, i, cnaDf, minVafs, maxVafs, snvDf)
-
     return cnaTreeAns, genTreesAns
 
 
-def assignSnv(snv, snvDf, gentrees, minVafs, maxVafs):
+def assignSnv(snv, snvDf, gentrees, minVafs, maxVafs, n):
     minError = 1000
     minTree = None
     for i in range(len(gentrees)):
-        error = snvError(snv, snvDf, minVafs[i], maxVafs[i])
+        error = snvError(snv, snvDf, minVafs[i], maxVafs[i], n)
         if error < minError:
             minError = error
             minTree = gentrees[i]
     return minError, minTree
 
 
-def snvError(snv, snvDf, minVaf, maxVaf):
-    n = len(snvDf.columns) - 2
+def snvError(snv, snvDf, minVaf, maxVaf, n):
     error = 0
     for i in range(n):
         props = snvDf.loc[snvDf['snv_mut']==snv]['sample'+str(i)]
@@ -422,8 +342,7 @@ def snvError(snv, snvDf, minVaf, maxVaf):
     return error
 
 
-def calcVaf(nodes, cnaDf):
-    n = len(cnaDf.columns) - 2
+def calcVaf(nodes, cnaDf, n):
     numer = np.zeros(n)
     denom = np.zeros(n)
     for node in nodes:
@@ -435,8 +354,7 @@ def calcVaf(nodes, cnaDf):
     return numer/denom
 
 
-def getVafRange(C, G, cnaDf):
-    n = len(cnaDf.columns) - 2
+def getVafRange(C, G, cnaDf, n):
     sectionedNodes = []
     for node in list(C.nodes):
         sectionedNodes.append(filterByNode(list(G.nodes), node))
@@ -444,7 +362,7 @@ def getVafRange(C, G, cnaDf):
     vafMin = [10 for _ in range(n)]
     vafMax = [-1 for _ in range(n)]
     for comb in combs:
-        vaf = calcVaf(list(comb), cnaDf)
+        vaf = calcVaf(list(comb), cnaDf, n)
         vafMin = [min(vaf[i], vafMin[i]) for i in range(n)]
         vafMax = [max(vaf[i], vafMax[i]) for i in range(n)]
     return vafMin, vafMax

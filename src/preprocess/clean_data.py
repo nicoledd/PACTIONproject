@@ -6,7 +6,7 @@ import networkx as nx
 
 
 def readProportionMatrices(prop):
-    return pd.read_csv(prop, sep='\s+')
+    return pd.read_csv(prop, sep='\t')
 
 
 def getAllPossibleTrees(prop):
