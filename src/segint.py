@@ -30,7 +30,7 @@ def segInt(G):
     for kidx in range(G.k):
         ksnv = snvDf.loc[snvDf['segment'] == str(kidx)]
         kcna = G.segments[kidx]['cnas']['df']
-        ktree = segmentTree(ksnv, kcna, s, G.m)
+        ktree = computekTree(ksnv, kcna, s, G.m)
         trees.append(ktree)
 
     T = solveProgressivePaction(trees, G.m)
@@ -54,32 +54,36 @@ def segInt(G):
 # paction funcs
 
 '''
-name: segmentTree
+name: computektree
 purpose: To obtain integrated tree of current segment
 params:
-    currSnvDf: pandas dataframe. snvs of current segment
-    currCnaDf: pandas dataframe. cnas of current segment
+    snvs: pandas dataframe. snvs of current segment
+    cnas: pandas dataframe. cnas of current segment
 return:
     T. nx graph. tree of this segment
 '''
-def segmentTree(currSnvDf, currCnaDf, s, nsamples):
-    cnatree, gentrees = processSegment(currSnvDf, currCnaDf, nsamples)
+def computekTree(snvs, cnas, s, nsamples):
+
+    # obtain the cna tree and gentrees of current segment
+    CNtree, gentrees = computeMutTrees(snvs, cnas, nsamples)
+
     currTrees = []
-    C = getCnaTree(currCnaDf, cnatree)
-    currTrees.append(C)
+    currTrees.append(CNtree)
 
     G = {} # snv -> gentree
     currSnvIndices = [] # tells us which indices we are processing
     if gentrees==None:
         gentrees = {}
-        for snv in list(currSnvDf['snv_mut']):
-            gentrees[snv] = [((1,1,0,0),(1,1,0,1))]
+        for snv in list(snvs['snv_mut']):
+            G = nx.DiGraph()
+            G.add_edges_from([((1,1,0,0),(1,1,0,1))])
+            gentrees[snv] = G
     for snv,gentree in gentrees.items():
-        G[snv] = findSnvTree(currCnaDf, currSnvDf, snv, gentree)
+        G[snv] = findSnvTree(cnas, snvs, snv, gentree)
         currSnvIndices.append(s[snv])
         currTrees.append(G[snv])
 
-    tmpT = solveProgressivePCI(currTrees, nsamples, currCnaDf)
+    tmpT = solveProgressivePCI(currTrees, nsamples, cnas)
     T = postprocessCombinedTree(tmpT, currSnvIndices, nsamples)
     return T
 
@@ -115,7 +119,7 @@ def findSnvTree(cnaDf, snvDf, snv, gentree):
     cnaDf['xysum'] = cnaDf['cns_tuple'].map(sum)
     cnaDf = cnaDf.set_index('cns_tuple')
     T = nx.DiGraph()
-    T.add_edges_from(gentree)
+    T.add_edges_from(list(gentree.edges))
     xy_to_bar = {}
     expanded_xy = None
     expanded_bars = None
@@ -175,27 +179,6 @@ def findSnvTree(cnaDf, snvDf, snv, gentree):
     return T
 
 
-def getCnaTree(currCnaDf, cnatree):
-    C = nx.DiGraph()
-    if cnatree==None:
-        C.add_nodes_from([(1,1)])
-    else:
-        C.add_edges_from(cnatree)
-    for j,r in currCnaDf.iterrows():
-        node = eval(r.copy_number_state)
-        for k,v in r.items():
-            if 'sample_' in k:
-                C.nodes[node][k] = v
-    return C
-
-def getCnaTrees(currCnaDf):
-    cnaStates = []
-    for item in list(currCnaDf['copy_number_state']):
-        item = item.replace('(','').replace(')','')
-        cnaStates.append(tuple(map(int, item.split(', '))))
-    cnaTrees = clonelib.get_cna_trees(set(cnaStates), 1, 1)
-    return cnaTrees
-
 
 def filterByNode(allNodes, currNode):
     ans = []
@@ -206,43 +189,89 @@ def filterByNode(allNodes, currNode):
     return ans
 
 
-def processSegment(snvDf, cnaDf, n):
+'''
+name: computeMutTrees
+purpose: returns the copy number state tree and genotype trees associated with current segment
+params:
+    snvs: pandas dataframe
+    cnas: pandas dataframe
+return:
+    C: networkx graph. Copy number state tree
+    Gs: mutation trees
+'''
+def computeMutTrees(snvs, cnas, n):
 
-    cnaTreeAns = None
-    genTreesAns = None
+    def enumCNtrees(cnas):
+        # obtain cnaTrees, then turn into nx format
+        cnaStates = []
+        for item in list(cnas['copy_number_state']):
+            item = item.replace('(','').replace(')','')
+            cnaStates.append(tuple(map(int, item.split(', '))))
+        cnaTrees = clonelib.get_cna_trees(set(cnaStates), 1, 1)
+        Cs = []
+        for cnaTree in cnaTrees:
+            C = nx.DiGraph()
+            if cnaTree == []:
+                C.add_nodes_from([(1,1)])
+            else:
+                C.add_edges_from(cnaTree)
+            for j,r in cnas.iterrows():
+                node = eval(r.copy_number_state)
+                for k,v in r.items():
+                    if 'sample_' in k:
+                        C.nodes[node][k] = v
+            Cs.append(C)
+        return Cs
+    
+    def enumGenTrees(C):
+        gentrees = clonelib.get_genotype_trees(list(C.edges))
+        Gs = []
+        for tree in gentrees:
+            G = nx.DiGraph()
+            G.add_edges_from(tree)
+            Gs.append(G)
+        return Gs
+
+    C = None
+    Gs = None
     minError = 100
 
-    cnaTrees = getCnaTrees(cnaDf)
-
-    for i in range(len(cnaTrees)):
-        cnaTree = cnaTrees[i]
-        C = nx.DiGraph()
-        C.add_edges_from(cnaTree)
-        gentrees = clonelib.get_genotype_trees(cnaTree)
+    CNtrees = enumCNtrees(cnas)
+    for CNtree in CNtrees:
+        genTrees = enumGenTrees(CNtree)
         minVafs = []
         maxVafs = []
-        currError = 0
-        for gentree in gentrees:
-            G = nx.DiGraph()
-            G.add_edges_from(gentree)
-            minVaf, maxVaf = getVafRange(C, G, cnaDf, n)
+        error = 0
+        for genTree in genTrees:
+            minVaf, maxVaf = getVafRange(CNtree, genTree, cnas, n)
             minVafs.append(minVaf)
             maxVafs.append(maxVaf)
 
         snvgentrees = {}
-        for snv in list(snvDf['snv_mut']):
-            error, snvgentrees[snv] = assignSnv(snv, snvDf, gentrees, minVafs, maxVafs, n)
-            currError += error
+        for snv in list(snvs['snv_mut']):
+            error, snvgentrees[snv] = assignSnv(snv, snvs, genTrees, minVafs, maxVafs, n)
+            error += error
         
-        if currError < minError:
-            minError = currError
-            cnaTreeAns = cnaTree
-            genTreesAns = snvgentrees
+        if error < minError:
+            minError = error
+            C = CNtree
+            Gs = snvgentrees
 
-    return cnaTreeAns, genTreesAns
+    return C, Gs
+
 
 
 def assignSnv(snv, snvDf, gentrees, minVafs, maxVafs, n):
+    def snvError(snv, snvDf, minVaf, maxVaf, n):
+        error = 0
+        for i in range(n):
+            props = snvDf.loc[snvDf['snv_mut']==snv]['sample'+str(i)]
+            vaf = float(props.iloc[0])
+            if vaf < minVaf[i]:
+                error += abs(minVaf[i] - vaf)
+            elif vaf > maxVaf[i]:
+                error += abs(maxVaf[i] - vaf)
+        return error
     minError = 1000
     minTree = None
     for i in range(len(gentrees)):
@@ -253,31 +282,18 @@ def assignSnv(snv, snvDf, gentrees, minVafs, maxVafs, n):
     return minError, minTree
 
 
-def snvError(snv, snvDf, minVaf, maxVaf, n):
-    error = 0
-    for i in range(n):
-        props = snvDf.loc[snvDf['snv_mut']==snv]['sample'+str(i)]
-        vaf = float(props.iloc[0])
-        if vaf < minVaf[i]:
-            error += abs(minVaf[i] - vaf)
-        elif vaf > maxVaf[i]:
-            error += abs(maxVaf[i] - vaf)
-    return error
-
-
-def calcVaf(nodes, cnaDf, n):
-    numer = np.zeros(n)
-    denom = np.zeros(n)
-    for node in nodes:
-        x0,y0,x1,y1 = node
-        propsRow = cnaDf.loc[cnaDf['copy_number_state'] == '(' + str(x0) + ', ' + str(y0) + ')']
-        props = [list(propsRow['sample_' + str(m)])[0] for m in range(n)]
-        numer += np.array([(x1+y1)*ele for ele in props])
-        denom += np.array([(x0+y0)*ele for ele in props])
-    return numer/denom
-
 
 def getVafRange(C, G, cnaDf, n):
+    def calcVaf(nodes, cnaDf, n):
+        numer = np.zeros(n)
+        denom = np.zeros(n)
+        for node in nodes:
+            x0,y0,x1,y1 = node
+            propsRow = cnaDf.loc[cnaDf['copy_number_state'] == '(' + str(x0) + ', ' + str(y0) + ')']
+            props = [list(propsRow['sample_' + str(m)])[0] for m in range(n)]
+            numer += np.array([(x1+y1)*ele for ele in props])
+            denom += np.array([(x0+y0)*ele for ele in props])
+        return numer/denom
     sectionedNodes = []
     for node in list(C.nodes):
         sectionedNodes.append(filterByNode(list(G.nodes), node))
