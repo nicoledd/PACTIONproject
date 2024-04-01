@@ -3,20 +3,20 @@ import networkx as nx
 import numpy as np
 import itertools
 import clonelib
-
-
 from progressive_caller import solveProgressivePCI, solveProgressivePaction
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 '''
 name: segInt
 purpose: segment integration algorithm
 params:
-    GTinput: Tree object.
+    G: Tree object.
 return:
-    todo
+    T: networkx graph. Final integrated tree
 '''
-def segInt(GTinput):
+def segInt(G):
 
     def snvToIdxDict(snvDf):
         snvToIdx = {}
@@ -24,33 +24,18 @@ def segInt(GTinput):
             snvToIdx[row['snv_mut']] = idx
         return snvToIdx
 
-    snvDf = GTinput.snvs # pd dataframe
-    cnaDf = GTinput.cnas # pd dataframe
-    s = snvToIdxDict(GTinput.snvs) # dict. snv name -> idx
-    trees = [] # list
+    snvDf = G.snvs
+    s = snvToIdxDict(G.snvs) # dict. snv name -> idx
+    trees = []
+    for kidx in range(G.k):
+        ksnv = snvDf.loc[snvDf['segment'] == str(kidx)]
+        kcna = G.segments[kidx]['cnas']['df']
+        ktree = segmentTree(ksnv, kcna, s, G.m)
+        trees.append(ktree)
 
-    # process for each segment
-    for segmentidx in range(GTinput.k):
+    T = solveProgressivePaction(trees, G.m)
 
-        # currSnvDf: pandas dataframe
-        # currCnaDf0: pandas dataframe
-        currSnvDf = snvDf.loc[snvDf['segment'] == str(segmentidx)]
-        currCnaDf0 = cnaDf[segmentidx]
-
-        tmpp = []
-        for cna,samples in currCnaDf0.items():
-            tmp = [str(cna)]
-            for sampleidx, prop in samples.items():
-                tmp.append(prop)
-            tmpp.append(tmp)
-        currCnaDf = pd.DataFrame(tmpp, columns =['copy_number_state'] + ['sample_' + str(ti) for ti in range(GTinput.m)])
-
-        T = segmentTree(currSnvDf, currCnaDf, s, GTinput.m)
-        trees.append(T)
-
-    finalT = solveProgressivePaction(trees, GTinput.m)
-
-    for node in finalT.nodes:
+    for node in T.nodes:
         firstSegment = None
         nodeName = ""
         for segment in node:
@@ -61,9 +46,8 @@ def segInt(GTinput):
                     firstSegment = firstSegment + (segment,)
             else:
                 nodeName += str(segment) + '\n'
-        finalT.nodes[node]['realName'] = str(firstSegment) + '\n' + str(nodeName)
-
-    return finalT
+        T.nodes[node]['realName'] = str(firstSegment) + '\n' + str(nodeName)
+    return T
 
 
 
@@ -76,7 +60,7 @@ params:
     currSnvDf: pandas dataframe. snvs of current segment
     currCnaDf: pandas dataframe. cnas of current segment
 return:
-    T. nx graph? tree of this segment
+    T. nx graph. tree of this segment
 '''
 def segmentTree(currSnvDf, currCnaDf, s, nsamples):
     cnatree, gentrees = processSegment(currSnvDf, currCnaDf, nsamples)

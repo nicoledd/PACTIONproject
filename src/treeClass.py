@@ -37,15 +37,15 @@ class Tree:
         
         # accessed through - 'u', 'v', 'segment', 'snvidx', 'cnaidx', 'snv_val', and samples
         self.snvs = self.computeSNVold()
-        self.cnas = self.computeCNAold()
 
 
         '''
         self.segments[kidx] : dict. info on each segment
             self.segments[kidx]['cnas'] : dict. info on CNAs of segment
+                self.segments[kidx]['cnas']['df'] : pandas dataframe. CNAs and props
                 self.segments[kidx]['cnas']['dot'] : dot string. CNA graph of segment
                 self.segments[kidx]['cnas']['nx'] : networkx graph. CNA graph of segment
-                    self.segments[kidx]['cnas']['nx'][node]['props'] : list? gives props of the cnas
+                    self.segments[kidx]['cnas']['nx'].nodes[node]['props'] : list? gives props of the cnas
             self.segments[kidx]['snvs'] : dict. info on SNVs of segment
                 self.segments[kidx]['snvs'][snvidx] : dict. info on SNVs of segment
                     self.segments[kidx]['snvs'][snvidx]['nx'] : networkx graph. genotype graph of snv
@@ -88,17 +88,25 @@ class Tree:
         def computeProps():
             for kidx in range(self.k):
                 for state in self.segments[kidx]['cnas']['nx'].nodes:
-                    for midx in range(self.m):
-                        self.segments[kidx]['cnas']['nx'].nodes[state]['sample' + str(midx)] = 0
+                    self.segments[kidx]['cnas']['nx'].nodes[state]['props'] = [0 for _ in range(self.m)]
             for kidx in range(self.k):
                 for node in self.T.nodes:
                     props = self.T.nodes[node]['props']
                     state = str(self.T.nodes[node]['segments'][kidx]['cna'])
                     for midx in range(self.m):
-                        self.segments[kidx]['cnas']['nx'].nodes[state]['sample'+str(midx)] += props[midx]
+                        self.segments[kidx]['cnas']['nx'].nodes[state]['props'][midx] += props[midx]
+        def computeDfs():
+            for kidx in range(self.k):
+                rows = []
+                for cna in self.segments[kidx]['cnas']['nx'].nodes:
+                    row = [cna] + self.segments[kidx]['cnas']['nx'].nodes[cna]['props']
+                    rows.append(row)
+                self.segments[kidx]['cnas']['df'] = pd.DataFrame(rows, columns =['copy_number_state'] + ['sample_' + str(i) for i in range(self.m)])
+
         computeTrees()
         dotFile()
         computeProps()
+        computeDfs()
 
 
 
@@ -152,8 +160,7 @@ class Tree:
 
    
 
-    def dotFile(self): # TODO: create dot file of tree, image display
-
+    def dotFile(self):
         A = "digraph T {\n"
         for node in self.T.nodes:
             A += self.T.nodes[node]['name'] + "[label=\"name: " + str(node) + "\\n"
@@ -229,26 +236,3 @@ class Tree:
         SNVs = pd.DataFrame(SNVs, columns=['snv_mut', 'u', 'v', 'segment'] + ['sample'+str(midx) for midx in range(self.m)])
         return SNVs
 
-
-
-    def computeCNAold(self):
-        self.cnas = {}
-        for kidx in range(self.k):
-            self.cnas[kidx] = set()
-            for node in self.T.nodes:
-                currCNA = self.T.nodes[node]['segments'][kidx]['cna']
-                self.cnas[kidx].add(currCNA)
-        for kidx,cnaSet in self.cnas.items():
-            cnas = list(cnaSet)
-            self.cnas[kidx] = {}
-            for cna in cnas:
-                self.cnas[kidx][cna] = {}
-                for sampleidx in range(self.m):
-                    self.cnas[kidx][cna]['sample' + str(sampleidx)] = 0
-        for kidx in range(self.k):
-            for node in self.T.nodes:
-                props = self.T.nodes[node]['props']
-                currCNA = self.T.nodes[node]['segments'][kidx]['cna']
-                for sampleidx in range(self.m):
-                    self.cnas[kidx][currCNA]['sample'+str(sampleidx)] += props[sampleidx]
-        return self.cnas
