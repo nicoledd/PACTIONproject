@@ -1,31 +1,31 @@
-import csv
-from csv import writer
 import pandas as pd
 import networkx as nx
 import numpy as np
-import matplotlib.pyplot as plt
 import itertools
-from matplotlib.patches import Rectangle
-from networkx.drawing.nx_pydot import graphviz_layout
 import clonelib
 
 
 from linear_programs.paction_solver import PCTIsolver
-from preprocess.clean_data import getIndexOfTrueGraphs, processSolutionTree, processTreeFile, ifTrueTreesAreFoundIn, getTreeEdges, readProportionMatrices, getAllPossibleTrees
-from postprocess.write import writeText, writeTree, writeClones
-from modality.modality_class import Modality
 from progressive_caller import solveProgressivePCI, solveProgressivePaction
 
 
-def runAlgo(GTinput):
+'''
+name: segInt
+purpose:
+params:
+    GTinput: Tree object.
+return:
+    todo
+'''
+def segInt(GTinput):
 
     snvDf = GTinput.snvs
-
     cnaDf = GTinput.cnas
+
     s = snvToIdxDict(GTinput.snvs) # snv name -> idx
 
     trees = []
-    usedIndices = []
+    cnatrees = []
 
     for segmentidx in range(GTinput.k):
         currSnvDf = snvDf.loc[snvDf['segment'] == str(segmentidx)]
@@ -37,11 +37,9 @@ def runAlgo(GTinput):
                 tmp.append(prop)
             tmpp.append(tmp)
         currCnaDf = pd.DataFrame(tmpp, columns =['copy_number_state'] + ['sample_' + str(ti) for ti in range(GTinput.m)])
-        if len(currSnvDf) == 0:
-            continue
-        usedIndices.append(segmentidx)
-        T = segmentTree(currSnvDf, currCnaDf, s, GTinput.m)
+        T, cnatree = segmentTree(currSnvDf, currCnaDf, s, GTinput.m)
         trees.append(T)
+        cnatrees.append(cnatree)
 
     finalT = solveProgressivePaction(trees, GTinput.m)
 
@@ -58,75 +56,7 @@ def runAlgo(GTinput):
                 nodeName += str(segment) + '\n'
         finalT.nodes[node]['realName'] = str(firstSegment) + '\n' + str(nodeName)
 
-    return finalT, usedIndices
-
-
-
-
-# processing and comparison funcs
-
-class Node:
-    def __init__(self, name, segments, props):
-        self.name = name
-        self.segments = segments
-        self.props = props
-    def __eq__(self, other):
-        if len(self.segments) != len(other.segments):
-            return False
-        return np.all([seg1 == seg2 for (seg1,seg2) in zip(self.segments,other.segments)])
-
-
-class Segment:
-    def __init__(self, copies, mutated):
-        self.copies = np.array(copies)
-        self.mutated = np.array(mutated)
-    def __eq__(self, other):
-        return np.array_equal(self.copies, other.copies) and np.array_equal(self.mutated, other.mutated)
-
-
-def getRealNodes(filename):
-    G = nx.Graph(nx.nx_pydot.read_dot(filename))
-    nodes = []
-    for node in list(G.nodes):
-        label0 = G.nodes[node]['label']
-        label1 = label0.split('\\n')
-        label2 = [ele.replace("\"",'').replace('(', '').replace(')','').strip() for ele in label1]
-        label25 = [ele.replace(" ","") if ele[-1]!=']' else ele for ele in label2]
-        label3 = [ele for ele in label25 if ele[-1]==';' or ele[-1]==']']
-        copies = [ele for ele in label3[0].split(';') if ele!='']
-        segments = []
-        for i in range(len(copies)):
-            currCopy0 = copies[i]
-            currCopy1 = currCopy0.split(',')
-            currCopy3 = [int(currCopy1[0]), int(currCopy1[1])]
-            mutated0 = label3[i+1]
-            mutated1 = mutated0.split(';')
-            mutated2 = [1 if ele.count('1')>0 else 0 for ele in mutated1]
-            s = Segment(currCopy3, mutated2)
-            segments.append(s)
-        
-        props0 = label3[-1]
-        props1 = props0.replace(']','').replace('[','').strip().split(' ')
-        props2 = [float(ele) for ele in props1]
-        nnode = Node(node, segments, props2)
-        nodes.append(nnode)
-
-    return nodes
-
-
-def getRecall(realNodes, predictedNodes):
-    found = 0
-    for node in predictedNodes:
-        for realn in realNodes:
-            if realn==node:
-                print('realn', realn.segments[0].copies)
-                print('node', node.segments[0].copies)
-                found += 1
-                break
-    print('num real nodes', len(realNodes))
-    print('found', found)
-    print('num predicted', len(predictedNodes))
-    return found/len(realNodes)
+    return finalT, cnatrees
 
 
 
@@ -155,10 +85,9 @@ def segmentTree(currSnvDf, currCnaDf, s, nsamples):
         currSnvIndices.append(s[snv])
         currTrees.append(G[snv])
 
-
     tmpT = solveProgressivePCI(currTrees, nsamples, currCnaDf)
     T = postprocessCombinedTree(tmpT, currSnvIndices, nsamples)
-    return T
+    return T, cnatree
 
 
 def postprocessCombinedTree(tmpT, currSnvIndices, nsamples):

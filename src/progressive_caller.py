@@ -1,14 +1,8 @@
-import csv
 from csv import writer
-import pandas as pd
 import networkx as nx
 import numpy as np
-from collections import deque
 
 from linear_programs.paction_solver import PCIsolver, PCTIsolver
-from preprocess.clean_data import getIndexOfTrueGraphs, processSolutionTree, processTreeFile, ifTrueTreesAreFoundIn, getTreeEdges, readProportionMatrices, getAllPossibleTrees
-from postprocess.write import writeText, writeTree, writeClones
-from modality.modality_class import Modality
 
 
 def solveProgressivePCI(trees, nsamples, cnaDf):
@@ -207,6 +201,7 @@ def solveProgressivePaction(trees, nsamples):
     treeA = trees[0]
     for i in range(1, len(trees)):
         treeB = trees[i]
+
         tupleToId, idToTuple = getProcessedClones(list(nx.topological_sort(treeA)))
         tupleToIdB, idToTupleB = getProcessedClones(list(nx.topological_sort(treeB)))
         treeAFake = translateToFinal(treeA, tupleToId, nsamples)
@@ -215,6 +210,7 @@ def solveProgressivePaction(trees, nsamples):
         treeA = translateFrom(currSol.G, idToTuple, idToTupleB, nsamples)
         treeB = None
     return treeA
+
 
 def translateToFinal(tree, d, nsamples):
     T = nx.DiGraph()
