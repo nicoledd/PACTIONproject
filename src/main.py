@@ -237,7 +237,6 @@ class Params:
         iprs = []
         cprs = []
         aprs = []
-        CNAtreerecalls = []
 
         numNodesG = []
         numNodesT = []
@@ -248,7 +247,7 @@ class Params:
 
             ifile = "".join(["../data/c", str(c), "_k", str(k), "_n", str(n), "_s", str(s), "_T.dot"])
             G = Tree(processClonesim(ifile))
-            Tdata, cnatrees = segInt(G)
+            Tdata = segInt(G)
             ipr, cpr, apr = get_tree_recalls(G, Tdata)
             numnodest = len(Tdata)
             numnodesg = len(G.T.nodes)
@@ -257,19 +256,6 @@ class Params:
             iprs.append(ipr)
             cprs.append(cpr)
             aprs.append(apr)
-            cnatreerecall = cnaTreeRecall(G, cnatrees, k)
-            CNAtreerecalls.append(cnatreerecall)
-        plotHist(iprs, 'ipr (in distinct paths, recall)', 'count', '../results/ipr.jpg')
-        plotHist(cprs, 'cpr (clustered pair recall)', 'count', '../results/cpr.jpg')
-        plotHist(aprs, 'apr (ancestral pair recall)', 'count', '../results/apr.jpg')
-        plotHist(CNAtreerecalls, 'copy-number state tree recall', 'count', '../results/cntr.jpg')
-        print(iprs)
-        plt.figure()
-        plt.scatter(numNodesG, numNodesT)
-        plt.xlabel('num nodes in ground truth tree')
-        plt.ylabel('num nodes in predicted tree')
-        plt.savefig('../results/nn.jpg')
-        plt.close()
         return
 
  
@@ -298,6 +284,7 @@ def main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree)
         pObj.estimate()
     return
           
+
 
 maxCNstates = [2]
 segments = [5]

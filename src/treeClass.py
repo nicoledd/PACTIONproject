@@ -1,41 +1,58 @@
 import networkx as nx
-import pygraphviz as pgv
-
-from networkx.drawing.nx_agraph import to_agraph
-
-
 import numpy as np
 import pandas as pd
 
 
 
-
+'''
+class: Tree
+attributes:
+    T: dict. Holds information for each tree node
+    k: int. Number of segments
+    m: int. Number of samples
+    snvs: pandas dataframe.
+    cnas: dict.
+    segments: dict. Holds information for each tree segment
+methods:
+    computeSegments
+    computeCNAs
+    computeVAFs
+    obtainSNVprops
+    computem
+'''
 class Tree:
     def __init__(self, T):
 
-        # self.T.nodes[node]['name'] : gives string name of node
-        # self.T.nodes[node]['props'] : gives a float array of props for node
-        # self.T.nodes[node]['segments'][segmentidx] : gives a 'cna' dict and 'snvs' list
-            # self.T.nodes[node]['segments'][segmentidx]['cna'] : the cna state
-            # self.T.nodes[node]['segments'][segmentidx]['snvs'] : list of snv states
+        '''
+        self.T.nodes[node]['name'] : String. name of node
+        self.T.nodes[node]['props'] : Float list. Proportions for node
+        self.T.nodes[node]['segments'][segmentidx] : Dict. Information for each segment
+            self.T.nodes[node]['segments'][segmentidx]['cna']: Tuple? the cna state
+            self.T.nodes[node]['segments'][segmentidx]['snvs'] : Pandas dataframe? list of snv states
+        '''
         self.T = T
         self.k = self.computek()
         self.m = self.computem()
         self.dot = self.dotFile()
         
         # accessed through - 'u', 'v', 'segment', 'snvidx', 'cnaidx', 'snv_val', and samples
-        self.snvs = self.computeVAFs()
-        self.cnas = self.computeCNAs()
+        self.snvs = self.computeSNVold()
+        self.cnas = self.computeCNAold()
 
-        # self.segments[kidx] : gives a 'cnas' dict and 'snvs' dict and 'n' num of snvs int
-            # self.segments[kidx]['cnas'] : information about cnas
-                # self.segments[kidx]['cnas']['nx'] : gives cna graph of this segment
-                    # self.segments[kidx]['cnas']['nx'][node]['props'] : gives props of the cnas
-                # self.segments[kidx]['cnas']['dot'] : gives cna graph of this segment, dot form
-            # self.segments[kidx]['snvs'][snvidx] : information about snvs
-                # self.segments[kidx]['snvs'][snvidx]['nx'] : gives genotype graph of this snv
-                # self.segments[kidx]['snvs'][snvidx]['dot'] : gives genotype graph of this snv, dot form
-                # self.segments[kidx]['snvs'][snvidx]['vaf'] : gives vafs of this snv
+
+        '''
+        self.segments[kidx] : dict. info on each segment
+            self.segments[kidx]['cnas'] : dict. info on CNAs of segment
+                self.segments[kidx]['cnas']['dot'] : dot string. CNA graph of segment
+                self.segments[kidx]['cnas']['nx'] : networkx graph. CNA graph of segment
+                    self.segments[kidx]['cnas']['nx'][node]['props'] : list? gives props of the cnas
+            self.segments[kidx]['snvs'] : dict. info on SNVs of segment
+                self.segments[kidx]['snvs'][snvidx] : dict. info on SNVs of segment
+                    self.segments[kidx]['snvs'][snvidx]['nx'] : networkx graph. genotype graph of snv
+                    self.segments[kidx]['snvs'][snvidx]['dot'] : dot string. genotype graph of snv
+                    self.segments[kidx]['snvs'][snvidx]['vaf'] : list. gives vafs of snv
+            self.segments[kidx]['n']: int. number of snvs in segment
+        '''
         self.segments = {}
         for kidx in range(self.k):
             self.segments[kidx] = {}
@@ -99,6 +116,7 @@ class Tree:
             for kidx in range(self.k):
                 for node in self.T.nodes:
                     snvs = self.T.nodes[node]['segments'][kidx]['snvs']
+                    self.segments[kidx]['n'] = len(snvs)
                     self.segments[kidx]['snvs'] = {}
                     for snvidx in range(len(snvs)):
                         self.segments[kidx]['snvs'][snvidx] = {}
@@ -118,8 +136,15 @@ class Tree:
                             self.segments[kidx]['snvs'][snvidx]['nx'].add_node(str([u1,u2,u3,u4]))
                         else:
                             self.segments[kidx]['snvs'][snvidx]['nx'].add_edge(str([u1,u2,u3,u4]), str([v1,v2,v3,v4]))
-        def computeVafs(): # TODO compute vafs of tree
-            pass
+        def computeVafs():
+            for kidx in range(self.k):
+                for snvidx in range(self.segments[kidx]['n']):
+                    self.segments[kidx]['snvs'][snvidx]['vaf'] = [0 for _ in range(self.m)]
+                    for node in self.T.nodes:
+                        for matpat in range(2):
+                            if self.T.nodes[node]['segments'][kidx]['snvs'][snvidx][matpat] > 0:
+                                for midx in range(self.m):
+                                    self.segments[kidx]['snvs'][snvidx]['vaf'][midx] += self.T.nodes[node]['props'][midx]*self.T.nodes[node]['segments'][kidx]['snvs'][snvidx][matpat]
         computeTrees()
         dotFile()
         computeVafs()
@@ -153,6 +178,9 @@ class Tree:
             return len(list(self.T.nodes[node]['props']))
 
 
+
+
+
     def obtainSNVprops(self, kidx, snvidx, cnaidx, val):
         def obtainVafDenom():
             vafdenom = [0 for _ in range(self.m)]
@@ -176,7 +204,7 @@ class Tree:
         return propsret
 
 
-    def computeVAFs(self):
+    def computeSNVold(self):
         SNVs = []
         numsnvs = 0
 
@@ -203,7 +231,7 @@ class Tree:
 
 
 
-    def computeCNAs(self):
+    def computeCNAold(self):
         self.cnas = {}
         for kidx in range(self.k):
             self.cnas[kidx] = set()

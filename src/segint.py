@@ -5,13 +5,12 @@ import itertools
 import clonelib
 
 
-from linear_programs.paction_solver import PCTIsolver
 from progressive_caller import solveProgressivePCI, solveProgressivePaction
 
 
 '''
 name: segInt
-purpose:
+purpose: segment integration algorithm
 params:
     GTinput: Tree object.
 return:
@@ -19,17 +18,25 @@ return:
 '''
 def segInt(GTinput):
 
-    snvDf = GTinput.snvs
-    cnaDf = GTinput.cnas
+    def snvToIdxDict(snvDf):
+        snvToIdx = {}
+        for idx, row in snvDf.iterrows():
+            snvToIdx[row['snv_mut']] = idx
+        return snvToIdx
 
-    s = snvToIdxDict(GTinput.snvs) # snv name -> idx
+    snvDf = GTinput.snvs # pd dataframe
+    cnaDf = GTinput.cnas # pd dataframe
+    s = snvToIdxDict(GTinput.snvs) # dict. snv name -> idx
+    trees = [] # list
 
-    trees = []
-    cnatrees = []
-
+    # process for each segment
     for segmentidx in range(GTinput.k):
+
+        # currSnvDf: pandas dataframe
+        # currCnaDf0: pandas dataframe
         currSnvDf = snvDf.loc[snvDf['segment'] == str(segmentidx)]
         currCnaDf0 = cnaDf[segmentidx]
+
         tmpp = []
         for cna,samples in currCnaDf0.items():
             tmp = [str(cna)]
@@ -37,9 +44,9 @@ def segInt(GTinput):
                 tmp.append(prop)
             tmpp.append(tmp)
         currCnaDf = pd.DataFrame(tmpp, columns =['copy_number_state'] + ['sample_' + str(ti) for ti in range(GTinput.m)])
-        T, cnatree = segmentTree(currSnvDf, currCnaDf, s, GTinput.m)
+
+        T = segmentTree(currSnvDf, currCnaDf, s, GTinput.m)
         trees.append(T)
-        cnatrees.append(cnatree)
 
     finalT = solveProgressivePaction(trees, GTinput.m)
 
@@ -56,18 +63,21 @@ def segInt(GTinput):
                 nodeName += str(segment) + '\n'
         finalT.nodes[node]['realName'] = str(firstSegment) + '\n' + str(nodeName)
 
-    return finalT, cnatrees
+    return finalT
 
 
 
 # paction funcs
 
-def snvToIdxDict(snvDf):
-    snvToIdx = {}
-    for idx, row in snvDf.iterrows():
-        snvToIdx[row['snv_mut']] = idx
-    return snvToIdx
-
+'''
+name: segmentTree
+purpose: To obtain integrated tree of current segment
+params:
+    currSnvDf: pandas dataframe. snvs of current segment
+    currCnaDf: pandas dataframe. cnas of current segment
+return:
+    T. nx graph? tree of this segment
+'''
 def segmentTree(currSnvDf, currCnaDf, s, nsamples):
     cnatree, gentrees = processSegment(currSnvDf, currCnaDf, nsamples)
     currTrees = []
@@ -87,7 +97,7 @@ def segmentTree(currSnvDf, currCnaDf, s, nsamples):
 
     tmpT = solveProgressivePCI(currTrees, nsamples, currCnaDf)
     T = postprocessCombinedTree(tmpT, currSnvIndices, nsamples)
-    return T, cnatree
+    return T
 
 
 def postprocessCombinedTree(tmpT, currSnvIndices, nsamples):

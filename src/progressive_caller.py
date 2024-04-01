@@ -1,4 +1,3 @@
-from csv import writer
 import networkx as nx
 import numpy as np
 
