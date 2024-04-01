@@ -1,4 +1,4 @@
-# Install script for directory: /Users/nsdong2/Downloads/lemon-1.3.1/lemon
+# Install script for directory: /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/lemon
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,7 +38,7 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/Users/nsdong2/Downloads/lemon-1.3.1/build/lemon/libemon.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/lemon/libemon.a")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libemon.a" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libemon.a")
     execute_process(COMMAND "/Library/Developer/CommandLineTools/usr/bin/ranlib" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libemon.a")
@@ -47,17 +47,17 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "headers" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/lemon" TYPE DIRECTORY FILES
-    "/Users/nsdong2/Downloads/lemon-1.3.1/lemon/."
-    "/Users/nsdong2/Downloads/lemon-1.3.1/lemon/bits"
-    "/Users/nsdong2/Downloads/lemon-1.3.1/lemon/concepts"
+    "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/lemon/."
+    "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/lemon/bits"
+    "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/lemon/concepts"
     FILES_MATCHING REGEX "/[^/]*\\.h$")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "headers" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/lemon" TYPE FILE FILES "/Users/nsdong2/Downloads/lemon-1.3.1/build/lemon/config.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/lemon" TYPE FILE FILES "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/lemon/config.h")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/Users/nsdong2/Downloads/lemon-1.3.1/build/lemon/lemon.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/lemon/lemon.pc")
 endif()
 

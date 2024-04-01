@@ -1,4 +1,4 @@
-# Install script for directory: /Users/nsdong2/Downloads/lemon-1.3.1/tools
+# Install script for directory: /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/tools
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,11 +38,11 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "bin" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/Users/nsdong2/Downloads/lemon-1.3.1/build/tools/lgf-gen")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/tools/lgf-gen")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/lgf-gen" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/lgf-gen")
     execute_process(COMMAND /usr/bin/install_name_tool
-      -delete_rpath "/Users/nsdong2/Downloads/lemon-1.3.1/build/lemon"
+      -delete_rpath "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/lemon"
       "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/lgf-gen")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/Library/Developer/CommandLineTools/usr/bin/strip" -u -r "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/lgf-gen")
@@ -51,11 +51,11 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "bin" OR NOT CMAKE_INSTALL_COMPONENT)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "bin" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/Users/nsdong2/Downloads/lemon-1.3.1/build/tools/dimacs-to-lgf")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/tools/dimacs-to-lgf")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-to-lgf" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-to-lgf")
     execute_process(COMMAND /usr/bin/install_name_tool
-      -delete_rpath "/Users/nsdong2/Downloads/lemon-1.3.1/build/lemon"
+      -delete_rpath "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/lemon"
       "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-to-lgf")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/Library/Developer/CommandLineTools/usr/bin/strip" -u -r "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-to-lgf")
@@ -64,11 +64,11 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "bin" OR NOT CMAKE_INSTALL_COMPONENT)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "bin" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/Users/nsdong2/Downloads/lemon-1.3.1/build/tools/dimacs-solver")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/tools/dimacs-solver")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-solver" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-solver")
     execute_process(COMMAND /usr/bin/install_name_tool
-      -delete_rpath "/Users/nsdong2/Downloads/lemon-1.3.1/build/lemon"
+      -delete_rpath "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/lemon"
       "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-solver")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/Library/Developer/CommandLineTools/usr/bin/strip" -u -r "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/dimacs-solver")
@@ -77,6 +77,6 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "bin" OR NOT CMAKE_INSTALL_COMPONENT)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "bin" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE PROGRAM FILES "/Users/nsdong2/Downloads/lemon-1.3.1/tools/lemon-0.x-to-1.x.sh")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE PROGRAM FILES "/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/tools/lemon-0.x-to-1.x.sh")
 endif()
 

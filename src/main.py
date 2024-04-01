@@ -289,7 +289,7 @@ def main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree)
 maxCNstates = [2]
 segments = [5]
 SNVs = [20]
-seeds = [0] # [0,1] + [i for i in range(4,12)] + [i for i in range(13,23)] + [i for i in range(24,33)]
+seeds = [1] #[0,1] + [i for i in range(4,12)] + [i for i in range(13,23)] + [i for i in range(24,33)]
 createNewSimulations = False
 estimateTree = True
 main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree)

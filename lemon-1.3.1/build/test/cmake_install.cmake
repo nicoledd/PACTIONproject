@@ -1,4 +1,4 @@
-# Install script for directory: /Users/nsdong2/Downloads/lemon-1.3.1/test
+# Install script for directory: /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/test
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

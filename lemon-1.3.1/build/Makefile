@@ -57,10 +57,10 @@ RM = /opt/homebrew/Cellar/cmake/3.27.4/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/nsdong2/Downloads/lemon-1.3.1
+CMAKE_SOURCE_DIR = /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/nsdong2/Downloads/lemon-1.3.1/build
+CMAKE_BINARY_DIR = /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	/opt/homebrew/Cellar/cmake/3.27.4/bin/cpack --config ./CPackSourceConfig.cmake /Users/nsdong2/Downloads/lemon-1.3.1/build/CPackSourceConfig.cmake
+	/opt/homebrew/Cellar/cmake/3.27.4/bin/cpack --config ./CPackSourceConfig.cmake /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -162,9 +162,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Downloads/lemon-1.3.1/build/CMakeFiles /Users/nsdong2/Downloads/lemon-1.3.1/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/CMakeFiles /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Downloads/lemon-1.3.1/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target

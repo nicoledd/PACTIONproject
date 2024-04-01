@@ -57,10 +57,10 @@ RM = /opt/homebrew/Cellar/cmake/3.27.4/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/nsdong2/Downloads/lemon-1.3.1
+CMAKE_SOURCE_DIR = /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/nsdong2/Downloads/lemon-1.3.1/build
+CMAKE_BINARY_DIR = /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -68,7 +68,7 @@ CMAKE_BINARY_DIR = /Users/nsdong2/Downloads/lemon-1.3.1/build
 # Special rule for the target package
 package: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool..."
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && /opt/homebrew/Cellar/cmake/3.27.4/bin/cpack --config ./CPackConfig.cmake
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && /opt/homebrew/Cellar/cmake/3.27.4/bin/cpack --config ./CPackConfig.cmake
 .PHONY : package
 
 # Special rule for the target package
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && /opt/homebrew/Cellar/cmake/3.27.4/bin/cpack --config ./CPackSourceConfig.cmake /Users/nsdong2/Downloads/lemon-1.3.1/build/CPackSourceConfig.cmake
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && /opt/homebrew/Cellar/cmake/3.27.4/bin/cpack --config ./CPackSourceConfig.cmake /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -162,14 +162,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Downloads/lemon-1.3.1/build/CMakeFiles /Users/nsdong2/Downloads/lemon-1.3.1/build/doc//CMakeFiles/progress.marks
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Downloads/lemon-1.3.1/build/CMakeFiles 0
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/CMakeFiles /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/doc//CMakeFiles/progress.marks
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/clean
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/clean
 .PHONY : clean
 
 # The main clean target
@@ -178,22 +178,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/preinstall
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/preinstall
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 doc/CMakeFiles/update-external-tags.dir/rule:
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/CMakeFiles/update-external-tags.dir/rule
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 doc/CMakeFiles/update-external-tags.dir/rule
 .PHONY : doc/CMakeFiles/update-external-tags.dir/rule
 
 # Convenience name for target.
@@ -202,7 +202,7 @@ update-external-tags: doc/CMakeFiles/update-external-tags.dir/rule
 
 # fast build rule for target.
 update-external-tags/fast:
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f doc/CMakeFiles/update-external-tags.dir/build.make doc/CMakeFiles/update-external-tags.dir/build
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(MAKE) $(MAKESILENT) -f doc/CMakeFiles/update-external-tags.dir/build.make doc/CMakeFiles/update-external-tags.dir/build
 .PHONY : update-external-tags/fast
 
 # Help Target
@@ -232,6 +232,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

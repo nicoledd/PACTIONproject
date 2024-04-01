@@ -53,10 +53,10 @@ RM = /opt/homebrew/Cellar/cmake/3.27.4/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/nsdong2/Downloads/lemon-1.3.1
+CMAKE_SOURCE_DIR = /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/nsdong2/Downloads/lemon-1.3.1/build
+CMAKE_BINARY_DIR = /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build
 
 # Utility rule file for dist.
 
@@ -94,6 +94,6 @@ CMakeFiles/dist.dir/clean:
 .PHONY : CMakeFiles/dist.dir/clean
 
 CMakeFiles/dist.dir/depend:
-	cd /Users/nsdong2/Downloads/lemon-1.3.1/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/nsdong2/Downloads/lemon-1.3.1 /Users/nsdong2/Downloads/lemon-1.3.1 /Users/nsdong2/Downloads/lemon-1.3.1/build /Users/nsdong2/Downloads/lemon-1.3.1/build /Users/nsdong2/Downloads/lemon-1.3.1/build/CMakeFiles/dist.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1 /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1 /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build /Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build/CMakeFiles/dist.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/dist.dir/depend
 

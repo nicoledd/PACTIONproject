@@ -4,7 +4,7 @@
 # compile CXX with /Library/Developer/CommandLineTools/usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/Users/nsdong2/Downloads/lemon-1.3.1 -I/Users/nsdong2/Downloads/lemon-1.3.1/build
+CXX_INCLUDES = -I/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1 -I/Users/nsdong2/Documents/PACTIONproject/lemon-1.3.1/build
 
 CXX_FLAGSarm64 =  -Wall -O3 -DNDEBUG -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk
 
