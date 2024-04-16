@@ -3,6 +3,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import os
 import itertools
+import logging
 
 from segint import segInt
 from treeClass import Tree
@@ -192,6 +193,48 @@ class Params:
             os.system(cmd)
     
 
+    def decifer(self, G):
+        decifer_input_file = 'decifer_input.tsv'
+        file = open(decifer_input_file, 'w')
+        file.write('0 #characters\n0 #samples\n#sample_index	sample_label	character_index	character_label	ref	var\n')
+        file.close()
+
+        sample = []
+        ref = []
+        var = []
+        cna_major = []
+        cna_minor = []
+        cna_props = []
+
+        # go through graph by node
+        for node in G.T.nodes:
+            for kidx in range(G.k):
+                curr_cna_major, curr_cna_minor = G.T.nodes[node]['segments'][kidx]['cna']
+                for snvidx in range(G.segments[kidx]['n']):
+                    for sample_idx in range(G.m):
+                        curr_var = G.segments[kidx]['snvs'][snvidx]['mut'][sample_idx]
+                        curr_ref = G.segments[kidx]['snvs'][snvidx]['ref'][sample_idx]
+                        sample.append(sample_idx)
+                        cna_major.append(curr_cna_major)
+                        cna_minor.append(curr_cna_minor)
+                        ref.append(curr_ref)
+                        var.append(curr_var)
+                        node = G.segments[kidx]['snvs'][snvidx]['node']
+                        cna_state_of_node = G.T.nodes[node]['segments'][kidx]['cna']
+                        df = G.segments[kidx]['cnas']['df']
+                        df2 = df[df['copy_number_state'] == str(cna_state_of_node)]
+                        val = df2.iloc[0]['sample_' + str(sample_idx)]
+                        cna_props.append(val)
+
+        mut = [i for i in range(len(sample))]
+
+        file = open(decifer_input_file, 'a')
+        for i in range(len(sample)):
+            file.write('\t'.join(str(ele) for ele in [sample[i],sample[i],mut[i],mut[i],ref[i],var[i],cna_major[i],cna_minor[i],cna_props[i]]))
+            file.write('\n')
+        file.close()
+
+
     '''
     name: estimate
     purpose:
@@ -247,6 +290,7 @@ class Params:
 
             ifile = "".join(["../data/c", str(c), "_k", str(k), "_n", str(n), "_s", str(s), "_T.dot"])
             G = Tree(processClonesim(ifile))
+            self.decifer(G)
             Tdata = segInt(G)
             ipr, cpr, apr = get_tree_recalls(G, Tdata)
             numnodest = len(Tdata)
@@ -276,21 +320,31 @@ return:
     None
 '''
 def main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree):
+    # 1. get decifer input
+    # 2. run decifer
+    # 3. obtain decifer output
+    
+    def createSimulationsCaller(createNewSimulations, pObj):
+        if createNewSimulations:
+            pObj.simulate()
+
+    def estimateTreeCaller(estimateTree, pObj):
+        if estimateTree:
+            pObj.estimate()
 
     pObj = Params(maxCNstates, segments, SNVs, seeds)
-    if createNewSimulations:
-        pObj.simulate()
-    if estimateTree:
-        pObj.estimate()
-    return
-          
+    createSimulationsCaller(createNewSimulations, pObj)
+    estimateTreeCaller(estimateTree, pObj)
 
 
-maxCNstates = [2]
-segments = [5]
-SNVs = [20]
-seeds = [1] #[0,1] + [i for i in range(4,12)] + [i for i in range(13,23)] + [i for i in range(24,33)]
-createNewSimulations = False
-estimateTree = True
-main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree)
+
+if __name__ == "__main__":
+    maxCNstates = [2]
+    segments = [5]
+    SNVs = [20]
+    seeds = [1] #[0,1] + [i for i in range(4,12)] + [i for i in range(13,23)] + [i for i in range(24,33)]
+    createNewSimulations = True
+    estimateTree = True
+    logging.basicConfig(level=logging.DEBUG)
+    main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree)
 

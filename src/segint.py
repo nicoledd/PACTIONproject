@@ -3,13 +3,9 @@ import networkx as nx
 import numpy as np
 import itertools
 import clonelib
-from progressive_caller import solveProgressivePCI, solveProgressivePaction
+from ilp_caller import solveProgressivePCI, solveProgressivePaction
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-
-# 1. cluster the SNVs
-
 
 
 '''
@@ -39,6 +35,7 @@ def segInt(G):
 
     T = solveProgressivePaction(trees, G.m)
 
+    '''
     for node in T.nodes:
         firstSegment = None
         nodeName = ""
@@ -51,6 +48,24 @@ def segInt(G):
             else:
                 nodeName += str(segment) + '\n'
         T.nodes[node]['realName'] = str(firstSegment) + '\n' + str(nodeName)
+    '''
+
+    for node in T.nodes:
+        firstSegment = []
+        nodeName = []
+        for segment in node:
+            if len(segment) == 2 and type(segment[0]) == int:
+                firstSegment.append(segment)
+            else:
+                if nodeName == []:
+                    nodeName.append(firstSegment)
+                nodeName.append([segment])
+        nameOfNode = ""
+        for ele in nodeName:
+            nameOfNode += str(ele) + '\n'
+        nameOfNode = nameOfNode[:-1]
+        #T.nodes[node]['realName'] = str(firstSegment) + '\n' + str(nodeName)
+    
     return T
 
 
@@ -74,7 +89,6 @@ def computekTree(snvs, cnas, s, nsamples):
         d[snv] = findSnvTree(cnas, snvs, snv, G)
         currSnvIndices.append(s[snv])
         trees.append(d[snv])
-        print('tree', d[snv].edges, G.edges)
 
     tmpT = solveProgressivePCI(trees, nsamples, cnas)
     T = postprocessCombinedTree(tmpT, currSnvIndices, nsamples)
@@ -112,6 +126,14 @@ return:
 '''
 def computeMutTrees(snvs, cnas, n):
 
+    '''
+    name: enumCNtrees
+    purpose: enumerate all possible copy-number state trees for current segment
+    params:
+        cnas: pandas dataframe
+    return:
+        Cs: list. of copy-number state trees
+    '''
     def enumCNtrees(cnas):
         cnaStates = []
         for item in list(cnas['copy_number_state']):
@@ -133,6 +155,14 @@ def computeMutTrees(snvs, cnas, n):
             Cs.append(C)
         return Cs
     
+    '''
+    name: enumGenTrees
+    purpose: enumerate all possible genotype trees for given copy-number state tree
+    params:
+        C: networkx graph. copy-number state tree
+    return:
+        Gs: list. of genotype trees
+    '''
     def enumGenTrees(C):
         gentrees = clonelib.get_genotype_trees(list(C.edges))
         if gentrees == []:
@@ -207,7 +237,18 @@ def assignSnv(snv, snvs, gentrees, minVafs, maxVafs, n):
     return minError, minTree
 
 
-
+'''
+name: getVafRange
+purpose: enumerate all possible copy-number state trees for current segment
+params:
+    C: networkx graph. copy-number state tree
+    G: networkx graph. genotype tree
+    cnaDf: pandas dataframe. cna information
+    n: int. number of samples
+return:
+    vafMin: list
+    vafMax: list
+'''
 def getVafRange(C, G, cnaDf, n):
     def filterByNode(allNodes, currNode):
         ans = []

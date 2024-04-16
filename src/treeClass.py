@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
 import pandas as pd
+from fractions import Fraction
 
 
 
@@ -51,6 +52,9 @@ class Tree:
                     self.segments[kidx]['snvs'][snvidx]['nx'] : networkx graph. genotype graph of snv
                     self.segments[kidx]['snvs'][snvidx]['dot'] : dot string. genotype graph of snv
                     self.segments[kidx]['snvs'][snvidx]['vaf'] : list. gives vafs of snv
+                    self.segments[kidx]['snvs'][snvidx]['node'] : the node the snv originated in
+                    self.segments[kidx]['snvs'][snvidx]['ref'] : num reference alleles (tot - mut)
+                    self.segments[kidx]['snvs'][snvidx]['mut'] : num mutated alleles
             self.segments[kidx]['n']: int. number of snvs in segment
         '''
         self.segments = {}
@@ -143,6 +147,7 @@ class Tree:
                         if [u1, u2, u3, u4] == [v1, v2, v3, v4]:
                             self.segments[kidx]['snvs'][snvidx]['nx'].add_node(str([u1,u2,u3,u4]))
                         else:
+                            self.segments[kidx]['snvs'][snvidx]['node'] = v
                             self.segments[kidx]['snvs'][snvidx]['nx'].add_edge(str([u1,u2,u3,u4]), str([v1,v2,v3,v4]))
         def computeVafs():
             for kidx in range(self.k):
@@ -153,9 +158,20 @@ class Tree:
                             if self.T.nodes[node]['segments'][kidx]['snvs'][snvidx][matpat] > 0:
                                 for midx in range(self.m):
                                     self.segments[kidx]['snvs'][snvidx]['vaf'][midx] += self.T.nodes[node]['props'][midx]*self.T.nodes[node]['segments'][kidx]['snvs'][snvidx][matpat]
+        def compute_refs():
+            for kidx in range(self.k):
+                for snvidx in range(self.segments[kidx]['n']):
+                    self.segments[kidx]['snvs'][snvidx]['ref'] = []
+                    self.segments[kidx]['snvs'][snvidx]['mut'] = []
+                    for midx in range(self.m):
+                        f = Fraction(self.segments[kidx]['snvs'][snvidx]['vaf'][midx]).limit_denominator(1000)
+                        self.segments[kidx]['snvs'][snvidx]['ref'].append(f.denominator - f.numerator)
+                        self.segments[kidx]['snvs'][snvidx]['mut'].append(f.numerator)
+
         computeTrees()
         dotFile()
         computeVafs()
+        compute_refs()
 
 
    
