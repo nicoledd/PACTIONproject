@@ -14,12 +14,6 @@ attributes:
     snvs: pandas dataframe.
     cnas: dict.
     segments: dict. Holds information for each tree segment
-methods:
-    computeSegments
-    computeCNAs
-    computeVAFs
-    obtainSNVprops
-    computem
 '''
 class Tree:
     def __init__(self, T):
@@ -29,12 +23,13 @@ class Tree:
         self.T.nodes[node]['props'] : Float list. Proportions for node
         self.T.nodes[node]['segments'][segmentidx] : Dict. Information for each segment
             self.T.nodes[node]['segments'][segmentidx]['cna']: Tuple? the cna state
-            self.T.nodes[node]['segments'][segmentidx]['snvs'] : Pandas dataframe? list of snv states
+            self.T.nodes[node]['segments'][segmentidx]['snvs'] : list of snvs
         '''
         self.T = T
         self.k = self.computek()
         self.m = self.computem()
         self.dot = self.dotFile()
+        self.mut_cluster_tree = self.compute_mut_cluster_tree()
         
         # accessed through - 'u', 'v', 'segment', 'snvidx', 'cnaidx', 'snv_val', and samples
         self.snvs = self.computeSNVold()
@@ -61,6 +56,21 @@ class Tree:
         for kidx in range(self.k):
             self.segments[kidx] = {}
         self.computeSegments()
+
+
+    def compute_mut_cluster_tree(self):
+        mut_cluster_tree = nx.DiGraph()
+        for edge in self.T.edges:
+            u,v = edge
+            mut_cluster_tree.add_edge(u,v,weight=0)
+            for kidx in range(self.k):
+                snvs_u = self.T.nodes[u]['segments'][kidx]['snvs']
+                snvs_v = self.T.nodes[v]['segments'][kidx]['snvs']
+                for i in range(len(snvs_u)):
+                    for j in range(2):
+                        if snvs_u[i][j] == 0 and snvs_v[i][j] != 0:
+                            mut_cluster_tree[u][v]['weight'] += 1
+        return mut_cluster_tree
 
 
     def computeSegments(self):
@@ -152,12 +162,28 @@ class Tree:
         def computeVafs():
             for kidx in range(self.k):
                 for snvidx in range(self.segments[kidx]['n']):
+                    self.segments[kidx]['snvs'][snvidx]['vaf_num'] = [0 for _ in range(self.m)]
+                    self.segments[kidx]['snvs'][snvidx]['vaf_denom'] = [0 for _ in range(self.m)]
                     self.segments[kidx]['snvs'][snvidx]['vaf'] = [0 for _ in range(self.m)]
                     for node in self.T.nodes:
                         for matpat in range(2):
-                            if self.T.nodes[node]['segments'][kidx]['snvs'][snvidx][matpat] > 0:
+                            # if mutation exists here, get variant allele count
+                            if int(self.T.nodes[node]['segments'][kidx]['snvs'][snvidx][matpat]) > 0:
                                 for midx in range(self.m):
-                                    self.segments[kidx]['snvs'][snvidx]['vaf'][midx] += self.T.nodes[node]['props'][midx]*self.T.nodes[node]['segments'][kidx]['snvs'][snvidx][matpat]
+                                    self.segments[kidx]['snvs'][snvidx]['vaf_num'][midx] += self.T.nodes[node]['props'][midx]*self.T.nodes[node]['segments'][kidx]['cna'][matpat]
+                            # regardless of mutation or not, get total allele count
+                            for midx in range(self.m):
+                                self.segments[kidx]['snvs'][snvidx]['vaf_denom'][midx] += self.T.nodes[node]['props'][midx]*self.T.nodes[node]['segments'][kidx]['cna'][matpat]
+                            
+                    # total vaf is variant allele count / total allele count
+                    for midx in range(self.m):
+                        num = self.segments[kidx]['snvs'][snvidx]['vaf_num'][midx]
+                        denom = self.segments[kidx]['snvs'][snvidx]['vaf_denom'][midx]
+                        if num == 0 and denom == 0:
+                            self.segments[kidx]['snvs'][snvidx]['vaf'][midx] = 0
+                        else:
+                            self.segments[kidx]['snvs'][snvidx]['vaf'][midx] = num/denom
+
         def compute_refs():
             for kidx in range(self.k):
                 for snvidx in range(self.segments[kidx]['n']):

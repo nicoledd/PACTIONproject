@@ -7,9 +7,27 @@ import logging
 
 from segint import segInt
 from treeClass import Tree
+from enumerate import Enumerate
 
+
+# coordinate descent
+def optimize_cluster_centers(self, dcfs, clust_group_map): 
+        new_dcfs = np.zeros(len(dcfs))
+
+        for q in range(len(dcfs)): #looping over clusters
+            # new_dcfs[q] = minimize_scalar(scalar_obj_val, args=(clust_group_map, q, self.data), 
+            #                               method='bounded', bounds=[0,1]).x
+            result = minimize(objective_function, x0=[dcfs[q]], args=(clust_group_map, q, self.data), bounds=[(0.025,1)])
+            if result ==0:
+                new_dcfs[q] = self.rng.uniform()
+            else:
+                new_dcfs[q]= result.x[0]
+
+           
+        return new_dcfs
 
 # recall functions
+
 
 def get_relations(directed_tree, snv_introductions):
     isancestor = nx.all_pairs_node_connectivity(directed_tree)
@@ -146,37 +164,49 @@ def processClonesim(f):
 
 
 
+def enum_input_mut_cluster_tree(T):
+    old_node_names = []
+    new_name_to_old_name = {}
+    old_name_to_new_name = {}
+    for node in T.nodes:
+        old_node_names.append(int(node))
+    old_node_names = sorted(old_node_names)
+    for i in range(len(old_node_names)):
+        new_name_to_old_name[i] = old_node_names[i]
+        old_name_to_new_name[old_node_names[i]] = i
+    newT = nx.DiGraph()
+    for node in T.nodes:
+        newT.add_node(old_name_to_new_name[int(node)])
+    for edge in T.edges:
+        u,v = edge
+        newT.add_edge(old_name_to_new_name[int(u)], old_name_to_new_name[int(v)])
+    return newT
 
 
-'''
-class: Params
-attributes:
-    maxCNstates: list. max numbers of copy-number states allowed in simulation
-    segments: list. number of segments in simulation
-    SNVs: list. number of SNVs in simulation
-    seeds: list. seed values in simulation
-methods:
-    simulate
-    estimate
-'''
+def enum_input_copy_number_state_tree(T):
+    newT = nx.DiGraph()
+    for node in T.nodes:
+        newT.add_node((int(node[1]),int(node[-2])))
+    for edge in T.edges:
+        u = (int(edge[0][1]),int(edge[0][-2]))
+        v = (int(edge[1][1]),int(edge[1][-2]))
+        newT.add_edge(u,v)
+    return newT
+
+
+
+
 class Params:
 
-    def __init__(self, maxCNstates, segments, SNVs, seeds):
+    def __init__(self, maxCNstates:list, segments:list, SNVs:list, seeds:list):
         self.maxCNstates = maxCNstates
         self.segments = segments
         self.SNVs = SNVs
         self.seeds = seeds
 
-    '''
-    name: simulate
-    purpose: run a series of terminal commands that generate simulated-tree-files in a director
-    params:
-        None
-    return:
-        None
-    '''
-    def simulate(self):
-        def delete_files_in_directory(directory_path):
+
+    def simulate(self) -> None:
+        def delete_files_in_directory(directory_path:str) -> None:
             try:
                 files = os.listdir(directory_path)
                 for file in files:
@@ -191,139 +221,34 @@ class Params:
         for k,n,s,c in itertools.product(self.segments, self.SNVs, self.seeds, self.maxCNstates):
             cmd = " ".join(['../clonesim/build/simulate -r -s', str(s), '-k', str(k), '-n', str(n), '-S ../data/cnatrees' + str(i) + '.txt -dot ../data/c'+str(c)+'_k'+str(k)+'_n'+str(n)+'_s'+str(s)+'_T.dot > ../data/o.txt'])
             os.system(cmd)
-    
-
-    def decifer(self, G):
-        decifer_input_file = 'decifer_input.tsv'
-        file = open(decifer_input_file, 'w')
-        file.write('0 #characters\n0 #samples\n#sample_index	sample_label	character_index	character_label	ref	var\n')
-        file.close()
-
-        sample = []
-        ref = []
-        var = []
-        cna_major = []
-        cna_minor = []
-        cna_props = []
-
-        # go through graph by node
-        for node in G.T.nodes:
-            for kidx in range(G.k):
-                curr_cna_major, curr_cna_minor = G.T.nodes[node]['segments'][kidx]['cna']
-                for snvidx in range(G.segments[kidx]['n']):
-                    for sample_idx in range(G.m):
-                        curr_var = G.segments[kidx]['snvs'][snvidx]['mut'][sample_idx]
-                        curr_ref = G.segments[kidx]['snvs'][snvidx]['ref'][sample_idx]
-                        sample.append(sample_idx)
-                        cna_major.append(curr_cna_major)
-                        cna_minor.append(curr_cna_minor)
-                        ref.append(curr_ref)
-                        var.append(curr_var)
-                        node = G.segments[kidx]['snvs'][snvidx]['node']
-                        cna_state_of_node = G.T.nodes[node]['segments'][kidx]['cna']
-                        df = G.segments[kidx]['cnas']['df']
-                        df2 = df[df['copy_number_state'] == str(cna_state_of_node)]
-                        val = df2.iloc[0]['sample_' + str(sample_idx)]
-                        cna_props.append(val)
-
-        mut = [i for i in range(len(sample))]
-
-        file = open(decifer_input_file, 'a')
-        for i in range(len(sample)):
-            file.write('\t'.join(str(ele) for ele in [sample[i],sample[i],mut[i],mut[i],ref[i],var[i],cna_major[i],cna_minor[i],cna_props[i]]))
-            file.write('\n')
-        file.close()
 
 
-    '''
-    name: estimate
-    purpose:
-        simulated tree - algorithm -> estimated tree
-        create metrics plots
-    params:
-        None
-    return:
-        None
-    '''
-    def estimate(self):
+    def estimate(self) -> None:
 
-        def cnaTreeRecall(G, cnatrees, k):
-            pred = []
-            true = []
-            for tree in cnatrees:
-                T = nx.DiGraph()
-                if tree == None:
-                    continue
-                for edge in tree:
-                    u,v = edge
-                    T.add_edge(str(u), str(v))
-                pred.append(T)
-            for kidx in range(k):
-                true.append(G.segments[kidx]['cnas']['nx'])
-            trueIndices = [0 for _ in range(len(true))]
-            for treeP in pred:
-                trueIdx = 0
-                for treeT in true:
-                    if set(treeP.edges) == set(treeT.edges):
-                        trueIndices[trueIdx] = 1
-                    trueIdx += 1
-            return sum(trueIndices)/k
-    
-        def plotHist(vals, xlabel, ylabel, ofile):
-            plt.figure()
-            plt.hist(vals)
-            plt.xlabel(xlabel)
-            plt.ylabel(ylabel)
-            plt.savefig(ofile)
-            plt.close()
-
-        iprs = []
-        cprs = []
-        aprs = []
-
-        numNodesG = []
-        numNodesT = []
-            
         for k,n,s,c in itertools.product(self.segments, self.SNVs, self.seeds, self.maxCNstates):
             
             print('k,n,s,c', k,n,s,c)
 
             ifile = "".join(["../data/c", str(c), "_k", str(k), "_n", str(n), "_s", str(s), "_T.dot"])
             G = Tree(processClonesim(ifile))
-            self.decifer(G)
-            Tdata = segInt(G)
-            ipr, cpr, apr = get_tree_recalls(G, Tdata)
-            numnodest = len(Tdata)
-            numnodesg = len(G.T.nodes)
-            numNodesG.append(numnodesg)
-            numNodesT.append(numnodest)
-            iprs.append(ipr)
-            cprs.append(cpr)
-            aprs.append(apr)
+            mut_cluster_tree = enum_input_mut_cluster_tree(G.mut_cluster_tree)
+
+            for kidx in range(G.k):
+                copy_number_state_tree = enum_input_copy_number_state_tree(G.segments[kidx]['cnas']['nx'])
+                #
+                refinements = Enumerate(mut_cluster_tree, copy_number_state_tree).solve()
+                # 0. how to get the optimal tree out of all refinements?
+                # 1. for each refined tree, for snvs which are in ambiguous positions, use vaf to figure out place
+                # 2. to get proportions, use a linear program to minimize correction difference
+
+            # Tdata = segInt(G) ilp is no longer needed
+
         return
 
  
 
-'''
-name: main
-purpose:
-    Create new simulations if bool is set.
-    Run experiment (simulated tree - algorithm -> predicted tree) if bool is set.
-params:
-    maxCNstates: list. max numbers of copy-number states allowed in simulation
-    segments: list. number of segments in simulation
-    SNVs: list. number of SNVs in simulation
-    seeds: list. seed values in simulation
-    createNewSimulations: bool. whether to create new simulations or not
-    estimateTree: bool. whether to run experiment or not
-return:
-    None
-'''
-def main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree):
-    # 1. get decifer input
-    # 2. run decifer
-    # 3. obtain decifer output
-    
+def main(maxCNstates:list, segments:list, SNVs:list, seeds:list, createNewSimulations:bool, estimateTree:bool) -> None:
+
     def createSimulationsCaller(createNewSimulations, pObj):
         if createNewSimulations:
             pObj.simulate()
@@ -337,14 +262,27 @@ def main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree)
     estimateTreeCaller(estimateTree, pObj)
 
 
-
 if __name__ == "__main__":
     maxCNstates = [2]
     segments = [5]
-    SNVs = [20]
+    SNVs = [15]
     seeds = [1] #[0,1] + [i for i in range(4,12)] + [i for i in range(13,23)] + [i for i in range(24,33)]
     createNewSimulations = True
     estimateTree = True
     logging.basicConfig(level=logging.DEBUG)
     main(maxCNstates, segments, SNVs, seeds, createNewSimulations, estimateTree)
 
+
+# input: (hard-coded)
+# 1. copy-number states and proportions
+# 2. snvs and vafs
+# 3. refinement of a) snv mutation cluster tree and b) copy number state tree
+# output:
+# 1. proportions of tree
+# metric:
+# 1. obtain the final result of the error function
+
+
+def foo(C, S, T):
+    
+    return
